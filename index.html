@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Компилятор микры</title>
+</head>
+
+<body>
+    <textarea style="width: 95vw; height: 80vh;" id="txt"></textarea>
+    <hr>
+    <input type="text" id="filename" placeholder="Название файла">
+    <hr>
+    <input type="button" value="Скомпилировать" onclick="onclk1()">
+    <hr>
+    <input type="button" value="Скачать исходник" onclick="onclk2()">
+    <script>
+        "use strict"
+        function download_file_with_content(filename, text) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+        }
+        var parameter_names = ['a', 'b', 'ma', 'mb', 'mem', 'src', 'sh', 'n', 'alu', 'ccx', 'f', 'dst', 'wm', 'jfi', 'cc', 'cha', 'const']
+        var default_values = ['0', '0', '0', '0', '0', '1', '0', '0', '6', '0', '0', '0', '0', '0', '0', '7', '0000']
+
+        function format_line_for_micro(current_values) {
+            var text = ""
+            for (var i = 0; i < current_values.length - 1; i++) {
+                text += "\u0001" + current_values[i].toUpperCase()
+            }
+            text += "\u0004" + current_values[i].toUpperCase().padStart(4, "0")
+            return text
+        }
+
+        function compile_text_for_micro(txt) {
+            var lines = txt.split("\n")
+            var labels = {}
+            var code_lines = []
+            for (var i = 0; i < lines.length; i++) {
+                var current_values = default_values.slice()
+                var spl = lines[i].split(":")
+                if (spl.length > 1) {
+                    var [label, code] = spl
+                    labels[label] = i.toString(16)
+                } else var code = spl[0]
+                var [code, _] = code.split("/")
+                var parameters_str = code.split(" ")
+                for (var j = 0; j < parameters_str.length; j++) {
+                    var [k, v] = parameters_str[j].split("=")
+                    var index = parameter_names.indexOf(k)
+                    current_values[index] = v
+                }
+                code_lines.push(current_values)
+            }
+            var compiled_txt = ""
+            for (var i = 0; i < code_lines.length; i++) {
+                var lst_index = code_lines[i].length - 1
+                var k = code_lines[i][lst_index]
+                if (labels[k] != undefined) {
+                    code_lines[i][lst_index] = labels[k]
+                }
+                compiled_txt += format_line_for_micro(code_lines[i])
+            }
+            return compiled_txt
+        }
+
+        function onclk1() {
+            var filename = document.getElementById("filename").value
+            var txt = document.getElementById("txt").value
+            if (!txt) alert("Введите код")
+            else if (!filename) alert("Введите название файла")
+            else download_file_with_content(filename + ".MEM", compile_text_for_micro(txt))
+        }
+
+        function onclk2() {
+            var filename = document.getElementById("filename").value
+            var txt = document.getElementById("txt").value
+            if (!txt) alert("Введите код")
+            else if (!filename) alert("Введите название файла")
+            else download_file_with_content(filename + ".txt", txt)
+        }
+
+        document.getElementById("txt").value = "cha=6 const=004F / RACT = 4Fh\nb=4 src=5 const=0100 dst=4 / SP = 100h\nb=5 src=5 const=0180 dst=4 / BP = 180h\nb=6 src=5 const=0200 dst=4 / SI = 200h\nM3: b=4 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = SP; SP = SP + 1h\nmem=4 b=0 dst=1 / AX = [ARAM]\nb=5 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = BP; BP = BP + 1h\nmem=4 b=1 dst=1 jfi=4 cha=1 const=M4 / CX = [ARAM]; Сохранение STP текущего адреса МК; goto M4\nb=6 wm=3 src=5 const=0002 alu=3 dst=4 / ARAM = SI; SI = SI + 2h\na=2 mem=7 wm=1 cha=4 const=M3 / [ARAM] = DX; if RACT > 0 then begin RACT = RACT - 1; goto M3; end\njfi=5 / STOP\nM4: b=3 dst=4 src=5 const=0001 / BX = 1h\nb=2 dst=4 src=5 const=0000 / DX = 0h\nM1: a=1 b=3 alu=9 cc=1 cha=3 const=M2 / if CX & BX = 1 then goto M2\nb=2 alu=3 dst=4 / DX = DX + AX\nM2: a=1 b=1 sh=2 n=1 dst=4 / CX = CX shr 1\nsh=8 n=1 dst=4 / AX = AX shl 1\na=1 jfi=1 cc=1 cha=3 const=M1 / if CX != 0 then goto M1\ncha=5 jfi=4 / Загрузка STP"
+        document.getElementById("filename").value = "test"
+    </script>
+</body>
+
+</html>
