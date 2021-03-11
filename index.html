@@ -62,6 +62,7 @@
                 }
                 code_lines.push(current_values)
             }
+            code_lines.push(default_values.slice())
             var compiled_txt = ""
             for (var i = 0; i < code_lines.length; i++) {
                 var lst_index = code_lines[i].length - 1
