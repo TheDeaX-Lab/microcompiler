@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Компилятор микры</title>
+</head>
+
+<body>
+    <input type="file" name="file" id="file">
+    <hr>
+    <input type="text" id="filename" placeholder="Название файла">
+    <hr>
+    <input type="button" value="Декомпилировать" onclick="onclk1()">
+    <script>
+        "use strict"
+        function download_file_with_content(filename, text) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+        }
+        var parameter_names = ['a', 'b', 'ma', 'mb', 'mem', 'src', 'sh', 'n', 'alu', 'ccx', 'f', 'dst', 'wm', 'jfi', 'cc', 'cha', 'const']
+        var default_values = ['0', '0', '0', '0', '0', '1', '0', '0', '6', '0', '0', '0', '0', '0', '0', '7', '0000']
+
+        function dict_to_query_with_space(obj) {
+            try {
+                return Object.entries(obj).map(function ([k, v]) {
+                    return k + '=' + v
+                }).reduce(function (left, right) {
+                    return left + ' ' + right
+                })
+            } catch (error) {
+                console.error(error)
+                return ''
+            }
+        }
+
+        function decompile_text_for_micro(txt) {
+            var code_lines = []
+            var labels = []
+            var count_lines = txt.length / 37
+            for (var line_index = 0; line_index < count_lines; line_index++) {
+                var current_line = {}
+                for (var i = 0; i < 17; i++) {
+                    var value = '0'
+                    if (i != 16) {
+                        value = txt[line_index * 37 + i * 2 + 1]
+                    } else {
+                        value = txt.slice(line_index * 37 + i * 2 + 1, line_index * 37 + i * 2 + 1 + 4)
+                    }
+                    if (default_values[i] != value) {
+                        current_line[parameter_names[i]] = value
+                    }
+                }
+                code_lines.push(current_line)
+            }
+            for (var i = 0; i < code_lines.length; i++) {
+                var current_line = code_lines[i]
+                if (current_line['cha'] == '4' || current_line['cha'] == '3' || current_line['cha'] == '1') {
+                    var label_record = labels.find(function (value, index, obj) {
+                        if (value[0] == current_line['const']) {
+                            return true
+                        }
+                        return false
+                    })
+                    if (!label_record) {
+                        labels.push([current_line['const'], 'label' + (labels.length + 1)])
+                    }
+                }
+            }
+            for (var i = 0; i < labels.length; i++) {
+                var label_record = labels[i]
+                var label_index = parseInt(label_record[0], 16)
+                var label_name = label_record[1]
+                code_lines[label_index]['const'] = label_name
+            }
+            var str_lines = []
+            for (var i = 0; i < code_lines.length; i++) {
+                str_lines.push(dict_to_query_with_space(code_lines[i]))
+            }
+            for (var i = 0; i < labels.length; i++) {
+                var label_record = labels[i]
+                var label_index = parseInt(label_record[0], 16)
+                var label_name = label_record[1]
+                str_lines[label_index] = label_name + ': ' + str_lines[label_index]
+            }
+            return str_lines.reduce(function (left, right) {
+                return left + '\n' + right
+            })
+        }
+
+        function onclk1() {
+            var filename = document.getElementById("filename").value
+            var files = document.getElementById("file").files
+            if (!(files.length > 0)) alert("Загрузите файл с кодом микры")
+            else if (!filename) alert("Введите название файла")
+            else {
+                var reader = new FileReader()
+                reader.onload = function () {
+                    download_file_with_content(filename + ".txt", decompile_text_for_micro(reader.result))
+                }
+                reader.readAsText(files[0])
+            }
+        }
+
+        document.getElementById("filename").value = "test"
+    </script>
+</body>
+
+</html>
