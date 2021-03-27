@@ -14,8 +14,15 @@
     <input type="text" id="filename" placeholder="Название файла">
     <hr>
     <input type="button" value="Скомпилировать" onclick="onclk1()">
+    <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл адресации</label>
+    <label><input type="checkbox" name="download_ramcode" id="download_ramcode">Скачать файл оперативной памяти с кодом</label>
     <hr>
     <input type="button" value="Скачать исходник" onclick="onclk2()">
+    <hr>
+    <textarea style="width: 95vw; height: 80vh;" id="cmds"></textarea>
+    <hr>
+    <textarea style="width: 95vw; height: 80vh;" id="ramcode"></textarea>
+    <hr>
     <script>
         "use strict"
         function download_file_with_content(filename, text) {
@@ -91,7 +98,10 @@
             else download_file_with_content(filename + ".txt", txt)
         }
 
-        document.getElementById("txt").value = "cha=6 const=004F / RACT = 4Fh\nb=4 src=5 const=0100 dst=4 / SP = 100h\nb=5 src=5 const=0180 dst=4 / BP = 180h\nb=6 src=5 const=0200 dst=4 / SI = 200h\nM3: b=4 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = SP; SP = SP + 1h\nmem=4 b=0 dst=1 / AX = [ARAM]\nb=5 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = BP; BP = BP + 1h\nmem=4 b=1 dst=1 jfi=4 cha=1 const=M4 / CX = [ARAM]; Сохранение STP текущего адреса МК; goto M4\nb=6 wm=3 src=5 const=0002 alu=3 dst=4 / ARAM = SI; SI = SI + 2h\na=2 mem=7 wm=1 cha=4 const=M3 / [ARAM] = DX; if RACT > 0 then begin RACT = RACT - 1; goto M3; end\njfi=5 / STOP\nM4: b=3 dst=4 src=5 const=0001 / BX = 1h\nb=2 dst=4 src=5 const=0000 / DX = 0h\nM1: a=1 b=3 alu=9 cc=1 cha=3 const=M2 / if CX & BX = 1 then goto M2\nb=2 alu=3 dst=4 / DX = DX + AX\nM2: a=1 b=1 sh=2 n=1 dst=4 / CX = CX shr 1\nsh=8 n=1 dst=4 / AX = AX shl 1\na=1 jfi=1 cc=1 cha=3 const=M1 / if CX != 0 then goto M1\ncha=5 jfi=4 / Загрузка STP"
+        //document.getElementById("txt").value = "cha=6 const=004F / RACT = 4Fh\nb=4 src=5 const=0100 dst=4 / SP = 100h\nb=5 src=5 const=0180 dst=4 / BP = 180h\nb=6 src=5 const=0200 dst=4 / SI = 200h\nM3: b=4 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = SP; SP = SP + 1h\nmem=4 b=0 dst=1 / AX = [ARAM]\nb=5 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = BP; BP = BP + 1h\nmem=4 b=1 dst=1 jfi=4 cha=1 const=M4 / CX = [ARAM]; Сохранение STP текущего адреса МК; goto M4\nb=6 wm=3 src=5 const=0002 alu=3 dst=4 / ARAM = SI; SI = SI + 2h\na=2 mem=7 wm=1 cha=4 const=M3 / [ARAM] = DX; if RACT > 0 then begin RACT = RACT - 1; goto M3; end\njfi=5 / STOP\nM4: b=3 dst=4 src=5 const=0001 / BX = 1h\nb=2 dst=4 src=5 const=0000 / DX = 0h\nM1: a=1 b=3 alu=9 cc=1 cha=3 const=M2 / if CX & BX = 1 then goto M2\nb=2 alu=3 dst=4 / DX = DX + AX\nM2: a=1 b=1 sh=2 n=1 dst=4 / CX = CX shr 1\nsh=8 n=1 dst=4 / AX = AX shl 1\na=1 jfi=1 cc=1 cha=3 const=M1 / if CX != 0 then goto M1\ncha=5 jfi=4 / Загрузка STP"
+        document.getElementById("txt").value = "b=c wm=3 src=5 alu=3 dst=4 const=2\nmem=5 b=e dst=1 cha=2\n\nmov: ma=3 mb=2 dst=4 cha=0\n\ncmp: ma=3 mb=2 alu=1 ccx=1 f=1 cha=0\n\njle: b=e alu=4 sh=e dst=4 cc=6 jfi=2 cha=3 const=goto\ncha=0\ngoto: a=e b=c alu=3 dst=4 cha=0\nstop: jfi=5"
+        document.getElementById("cmds").value = "mov: label=mov adress=1000_1011_11xx_xxxx\ncmp: label=cmp adress=0011_1011_11xx_xxxx\njle: label=jle adress=0111_1110_xxxx_xxxx\nhalt: label=halt adress=1111_1111_xxxx_xxxx"
+        document.getElementById("ramcode").value = "cmd=mov reg2=000 rm=001\ncmd=cmp reg2=000 rm=002\ncmd=jle lb=2\ncmd=mov reg2=000 rm=002\ncmd=cmp reg2=000 rm=003\ncmd=jle lb=2\ncmd=mov reg2=000 rm=003\ncmd=halt"
         document.getElementById("filename").value = "test"
     </script>
 </body>
