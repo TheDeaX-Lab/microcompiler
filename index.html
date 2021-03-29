@@ -15,7 +15,8 @@
     <hr>
     <input type="button" value="Скомпилировать" onclick="onclk1()">
     <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл адресации</label>
-    <label><input type="checkbox" name="download_ramcode" id="download_ramcode">Скачать файл оперативной памяти с кодом</label>
+    <label><input type="checkbox" name="download_ramcode" id="download_ramcode">Скачать файл оперативной памяти с
+        кодом</label>
     <hr>
     <input type="button" value="Скачать исходник" onclick="onclk2()">
     <hr>
@@ -27,7 +28,11 @@
         "use strict"
         function download_file_with_content(filename, text) {
             var element = document.createElement('a');
-            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            if (text instanceof Blob) {
+                element.setAttribute('href', URL.createObjectURL(text))
+            } else {
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            }
             element.setAttribute('download', filename);
 
             element.style.display = 'none';
@@ -49,7 +54,77 @@
             return text
         }
 
-        function compile_text_for_micro(txt) {
+        function compile_cmds_for_micro(txt, filename, labels) {
+            var compiled_cmds = []
+            var commands = {}
+            var lines = txt.split('\n')
+            for (var i = 0; i < lines.length; i++) {
+                var [command_name, parameters_str] = lines[i].split(":")
+                commands[command_name] = {}
+                var parameters = parameters_str.trim().split(' ')
+                for (var j = 0; j < parameters.length; j++) {
+                    var [key, value] = parameters[j].split('=')
+                    if (key == "label") {
+                        commands[command_name].mk = labels[value]
+                    } else if (key == 'address') {
+                        commands[command_name].c_op = value.split("_").join('')
+                    }
+                }
+            }
+            if (document.getElementById("download_ramcode").checked) {
+                var ramcode_txt = document.getElementById("ramcode").value
+                if (!ramcode_txt) alert("Напишите текст программы")
+                else compile_ramcode_for_micro(ramcode_txt, filename, commands)
+            }
+            var parameters = Object.entries(commands)
+            var chr = new ArrayBuffer(1)
+            chr[0] = 211
+            for (var i = 0; i < parameters.length; i++) {
+                
+                compiled_cmds = compiled_cmds.concat(['\x02' + parameters[i][1].mk.toUpperCase().padStart(2, '0') + '\x10' + parameters[i][1].c_op.toUpperCase().padStart(16, '0') + "\x2A\x7F"]).concat([chr]).concat(["\x25"])
+            }
+            compiled_cmds = compiled_cmds.concat(['\u0002' + "00" + '\u0010' + "0".padStart(16, '0') + "\u002A\u007F"].concat([chr]).concat(["\u0025"]))
+            var blb = new Blob(compiled_cmds, { type: 'octet-stream' })
+            download_file_with_content(filename + '.TTA', blb)
+        }
+
+        function compile_ramcode_for_micro(txt, filename, commands) {
+            var compiled_ramcode = ""
+            var ramcode_str = ""
+            var ramcodes = []
+            var lines = txt.split('\n')
+            for (var i = 0; i < lines.length; i++) {
+                var current_code = '0000000000000000'
+                var parameters = lines[i].split(' ')
+                for (var j = 0; j < parameters.length; j++) {
+                    var [key, value] = parameters[j].split('=')
+                    if (key == 'cmd') {
+                        current_code = commands[value].c_op
+                    } else if (key == 'reg1') {
+                        current_code = current_code.slice(0, 5) + value.padStart(3, '0') + current_code.slice(8)
+                    } else if (key == 'reg2') {
+                        current_code = current_code.slice(0, 10) + value.padStart(3, '0') + current_code.slice(13)
+                    } else if (key == 'rm') {
+                        current_code = current_code.slice(0, 13) + value.padStart(3, '0')
+                    } else if (key == 'lb') {
+                        current_code = current_code.slice(0, 8) + value.padStart(8, '0')
+                    }
+                }
+                console.log(current_code)
+                current_code = current_code.replace('x', '0')
+                ramcodes.push(parseInt(current_code.slice(8), 2).toString(16).padStart(2, '0') + parseInt(current_code.slice(0, 8), 2).toString(16).padStart(2, '0'))
+            }
+            ramcode_str = ramcodes.join("")
+            var b = ""
+            while (ramcode_str.length > 0) {
+                [b, ramcode_str] = [ramcode_str.slice(0, 2), ramcode_str.slice(2)]
+                compiled_ramcode += '\u0002' + b.toUpperCase()
+            }
+            compiled_ramcode += ("\u0002" + "00").repeat(16)
+            download_file_with_content(filename + '.RAM', compiled_ramcode)
+        }
+
+        function compile_text_for_micro(txt, filename) {
             var lines = txt.split("\n")
             var labels = {}
             var code_lines = []
@@ -79,7 +154,12 @@
                 }
                 compiled_txt += format_line_for_micro(code_lines[i])
             }
-            return compiled_txt
+            if (document.getElementById("download_cmds").checked) {
+                var cmds_txt = document.getElementById("cmds").value
+                if (!cmds_txt) alert("Напишите кодирование команды")
+                else compile_cmds_for_micro(cmds_txt, filename, labels)
+            }
+            download_file_with_content(filename + ".MEM", compiled_txt)
         }
 
         function onclk1() {
@@ -87,7 +167,7 @@
             var txt = document.getElementById("txt").value
             if (!txt) alert("Введите код")
             else if (!filename) alert("Введите название файла")
-            else download_file_with_content(filename + ".MEM", compile_text_for_micro(txt))
+            else compile_text_for_micro(txt, filename)
         }
 
         function onclk2() {
@@ -99,9 +179,9 @@
         }
 
         //document.getElementById("txt").value = "cha=6 const=004F / RACT = 4Fh\nb=4 src=5 const=0100 dst=4 / SP = 100h\nb=5 src=5 const=0180 dst=4 / BP = 180h\nb=6 src=5 const=0200 dst=4 / SI = 200h\nM3: b=4 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = SP; SP = SP + 1h\nmem=4 b=0 dst=1 / AX = [ARAM]\nb=5 wm=3 src=5 const=0001 alu=3 dst=4 / ARAM = BP; BP = BP + 1h\nmem=4 b=1 dst=1 jfi=4 cha=1 const=M4 / CX = [ARAM]; Сохранение STP текущего адреса МК; goto M4\nb=6 wm=3 src=5 const=0002 alu=3 dst=4 / ARAM = SI; SI = SI + 2h\na=2 mem=7 wm=1 cha=4 const=M3 / [ARAM] = DX; if RACT > 0 then begin RACT = RACT - 1; goto M3; end\njfi=5 / STOP\nM4: b=3 dst=4 src=5 const=0001 / BX = 1h\nb=2 dst=4 src=5 const=0000 / DX = 0h\nM1: a=1 b=3 alu=9 cc=1 cha=3 const=M2 / if CX & BX = 1 then goto M2\nb=2 alu=3 dst=4 / DX = DX + AX\nM2: a=1 b=1 sh=2 n=1 dst=4 / CX = CX shr 1\nsh=8 n=1 dst=4 / AX = AX shl 1\na=1 jfi=1 cc=1 cha=3 const=M1 / if CX != 0 then goto M1\ncha=5 jfi=4 / Загрузка STP"
-        document.getElementById("txt").value = "b=c wm=3 src=5 alu=3 dst=4 const=2\nmem=5 b=e dst=1 cha=2\n\nmov: ma=3 mb=2 dst=4 cha=0\n\ncmp: ma=3 mb=2 alu=1 ccx=1 f=1 cha=0\n\njle: b=e alu=4 sh=e dst=4 cc=6 jfi=2 cha=3 const=goto\ncha=0\ngoto: a=e b=c alu=3 dst=4 cha=0\nstop: jfi=5"
-        document.getElementById("cmds").value = "mov: label=mov adress=1000_1011_11xx_xxxx\ncmp: label=cmp adress=0011_1011_11xx_xxxx\njle: label=jle adress=0111_1110_xxxx_xxxx\nhalt: label=halt adress=1111_1111_xxxx_xxxx"
-        document.getElementById("ramcode").value = "cmd=mov reg2=000 rm=001\ncmd=cmp reg2=000 rm=002\ncmd=jle lb=2\ncmd=mov reg2=000 rm=002\ncmd=cmp reg2=000 rm=003\ncmd=jle lb=2\ncmd=mov reg2=000 rm=003\ncmd=halt"
+        document.getElementById("txt").value = "b=c wm=3 src=5 alu=3 dst=4 const=2\nmem=5 b=e dst=1 cha=2\n\nmov: ma=3 mb=2 dst=4 cha=0\n\ncmp: ma=3 mb=2 alu=1 ccx=1 f=1 cha=0\n\njle: b=e alu=4 sh=e dst=4 cc=6 jfi=2 cha=3 const=goto\ncha=0\ngoto: a=e b=c alu=3 dst=4 cha=0\nhalt: jfi=5"
+        document.getElementById("cmds").value = "mov: label=mov address=1000_1011_11xx_xxxx\ncmp: label=cmp address=0011_1011_11xx_xxxx\njle: label=jle address=0111_1110_xxxx_xxxx\nhalt: label=halt address=1111_1111_xxxx_xxxx"
+        document.getElementById("ramcode").value = "cmd=mov reg2=000 rm=001\ncmd=cmp reg2=000 rm=010\ncmd=jle lb=10\ncmd=mov reg2=000 rm=010\ncmd=cmp reg2=000 rm=011\ncmd=jle lb=10\ncmd=mov reg2=000 rm=011\ncmd=halt"
         document.getElementById("filename").value = "test"
     </script>
 </body>
