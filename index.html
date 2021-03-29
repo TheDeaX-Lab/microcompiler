@@ -14,7 +14,8 @@
     <input type="text" id="filename" placeholder="Название файла">
     <hr>
     <input type="button" value="Скомпилировать" onclick="onclk1()">
-    <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл адресации</label>
+    <label><input type="checkbox" name="download_cmds" id="download_mkcmds">Скачать файл микропрограммной памяти</label>
+    <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл таблицы преобразования адресов</label>
     <label><input type="checkbox" name="download_ramcode" id="download_ramcode">Скачать файл оперативной памяти с
         кодом</label>
     <hr>
@@ -71,21 +72,20 @@
                     }
                 }
             }
-            if (document.getElementById("download_ramcode").checked) {
-                var ramcode_txt = document.getElementById("ramcode").value
-                if (!ramcode_txt) alert("Напишите текст программы")
-                else compile_ramcode_for_micro(ramcode_txt, filename, commands)
-            }
+            var ramcode_txt = document.getElementById("ramcode").value
+            if (!ramcode_txt) alert("Напишите текст программы")
+            else compile_ramcode_for_micro(ramcode_txt, filename, commands)
             var parameters = Object.entries(commands)
             var chr = new ArrayBuffer(1)
             chr[0] = 211
             for (var i = 0; i < parameters.length; i++) {
-                
+
                 compiled_cmds = compiled_cmds.concat(['\x02' + parameters[i][1].mk.toUpperCase().padStart(2, '0') + '\x10' + parameters[i][1].c_op.toUpperCase().padStart(16, '0') + "\x2A\x7F"]).concat([chr]).concat(["\x25"])
             }
             compiled_cmds = compiled_cmds.concat(['\u0002' + "00" + '\u0010' + "0".padStart(16, '0') + "\u002A\u007F"].concat([chr]).concat(["\u0025"]))
             var blb = new Blob(compiled_cmds, { type: 'octet-stream' })
-            download_file_with_content(filename + '.TTA', blb)
+            if (document.getElementById("download_cmds").checked)
+                download_file_with_content(filename + '.TTA', blb)
         }
 
         function compile_ramcode_for_micro(txt, filename, commands) {
@@ -110,7 +110,6 @@
                         current_code = current_code.slice(0, 8) + value.padStart(8, '0')
                     }
                 }
-                console.log(current_code)
                 current_code = current_code.replace('x', '0')
                 ramcodes.push(parseInt(current_code.slice(8), 2).toString(16).padStart(2, '0') + parseInt(current_code.slice(0, 8), 2).toString(16).padStart(2, '0'))
             }
@@ -121,7 +120,8 @@
                 compiled_ramcode += '\u0002' + b.toUpperCase()
             }
             compiled_ramcode += ("\u0002" + "00").repeat(16)
-            download_file_with_content(filename + '.RAM', compiled_ramcode)
+            if (document.getElementById("download_ramcode").checked)
+                download_file_with_content(filename + '.RAM', compiled_ramcode)
         }
 
         function compile_text_for_micro(txt, filename) {
@@ -154,12 +154,11 @@
                 }
                 compiled_txt += format_line_for_micro(code_lines[i])
             }
-            if (document.getElementById("download_cmds").checked) {
-                var cmds_txt = document.getElementById("cmds").value
-                if (!cmds_txt) alert("Напишите кодирование команды")
-                else compile_cmds_for_micro(cmds_txt, filename, labels)
-            }
-            download_file_with_content(filename + ".MEM", compiled_txt)
+            if (document.getElementById("download_mkcmds").checked)
+                download_file_with_content(filename + ".MEM", compiled_txt)
+            var cmds_txt = document.getElementById("cmds").value
+            if (!cmds_txt) alert("Напишите кодирование команды")
+            else compile_cmds_for_micro(cmds_txt, filename, labels)
         }
 
         function onclk1() {
