@@ -76,13 +76,14 @@
             if (!ramcode_txt) alert("Напишите текст программы")
             else compile_ramcode_for_micro(ramcode_txt, filename, commands)
             var parameters = Object.entries(commands)
-            var chr = new ArrayBuffer(1)
-            chr[0] = 211
+            var arrbuf = new ArrayBuffer(1)
+            var uint8 = new Uint8Array(arrbuf)
+            uint8[0] = 211
             for (var i = 0; i < parameters.length; i++) {
 
-                compiled_cmds = compiled_cmds.concat(['\x02' + parameters[i][1].mk.toUpperCase().padStart(2, '0') + '\x10' + parameters[i][1].c_op.toUpperCase().padStart(16, '0') + "\x2A\x7F"]).concat([chr]).concat(["\x25"])
+                compiled_cmds = compiled_cmds.concat(['\x02' + parameters[i][1].mk.toUpperCase().padStart(2, '0') + '\x10' + parameters[i][1].c_op.toUpperCase().padStart(16, '0') + "\x2A\x7F"]).concat([arrbuf]).concat(["\x25"])
             }
-            compiled_cmds = compiled_cmds.concat(['\u0002' + "00" + '\u0010' + "0".padStart(16, '0') + "\u002A\u007F"].concat([chr]).concat(["\u0025"]))
+            compiled_cmds = compiled_cmds.concat(['\u0002' + "00" + '\u0010' + "0".padStart(16, '0') + "\u002A\u007F"].concat([arrbuf]).concat(["\u0025"]))
             var blb = new Blob(compiled_cmds, { type: 'octet-stream' })
             if (document.getElementById("download_cmds").checked)
                 download_file_with_content(filename + '.TTA', blb)
