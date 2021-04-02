@@ -74,15 +74,20 @@
                     })
                     if (!label_record) {
                         labels.push([current_line['const'], 'label' + (labels.length + 1)])
+                        label_record = labels[labels.length - 1] 
                     }
+                    current_line['const'] = label_record[1]
                 }
             }
-            for (var i = 0; i < labels.length; i++) {
+            /*for (var i = 0; i < labels.length; i++) {
                 var label_record = labels[i]
                 var label_index = parseInt(label_record[0], 16)
                 var label_name = label_record[1]
+                if (isNaN(label_index)) label_index = 0
                 code_lines[label_index]['const'] = label_name
             }
+            Хз что я создал)) оно ломает логику проги
+            */
             var str_lines = []
             for (var i = 0; i < code_lines.length; i++) {
                 str_lines.push(dict_to_query_with_space(code_lines[i]))
@@ -91,6 +96,7 @@
                 var label_record = labels[i]
                 var label_index = parseInt(label_record[0], 16)
                 var label_name = label_record[1]
+                if (isNaN(label_index)) label_index = 0
                 str_lines[label_index] = label_name + ': ' + str_lines[label_index]
             }
             return str_lines.reduce(function (left, right) {
