@@ -82,7 +82,6 @@
             var uint8 = new Uint8Array(arrbuf)
             uint8[0] = 211
             for (var i = 0; i < parameters.length; i++) {
-
                 compiled_cmds = compiled_cmds.concat(['\x02' + parameters[i][1].mk.toUpperCase().padStart(2, '0') + '\x10' + parameters[i][1].c_op.toUpperCase().padStart(16, '0') + "\x2A\x7F"]).concat([arrbuf]).concat(["\x25"])
             }
             compiled_cmds = compiled_cmds.concat(['\u0002' + "00" + '\u0010' + "0".padStart(16, '0') + "\u002A\u007F"].concat([arrbuf]).concat(["\u0025"]))
@@ -102,7 +101,7 @@
                 for (var j = 0; j < parameters.length; j++) {
                     var [key, value] = parameters[j].split('=')
                     if (key == 'cmd') {
-                        current_code = commands[value].c_op
+                        current_code = commands[value].c_op.replace("x", "0")
                     } else if (key == 'reg1') {
                         current_code = current_code.slice(0, 5) + value.padStart(3, '0') + current_code.slice(8)
                     } else if (key == 'reg2') {
@@ -113,7 +112,6 @@
                         current_code = current_code.slice(0, 8) + value.padStart(8, '0')
                     }
                 }
-                current_code = current_code.replace('x', '0')
                 ramcodes.push(parseInt(current_code.slice(8), 2).toString(16).padStart(2, '0') + parseInt(current_code.slice(0, 8), 2).toString(16).padStart(2, '0'))
             }
             ramcode_str = ramcodes.join("")
