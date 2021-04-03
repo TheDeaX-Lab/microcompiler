@@ -15,7 +15,8 @@
     <hr>
     <input type="button" value="Скомпилировать" onclick="onclk1()">
     <label><input type="checkbox" name="download_cmds" id="download_mkcmds">Скачать файл микропрограммной памяти</label>
-    <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл таблицы преобразования адресов</label>
+    <label><input type="checkbox" name="download_cmds" id="download_cmds">Скачать файл таблицы преобразования
+        адресов</label>
     <label><input type="checkbox" name="download_ramcode" id="download_ramcode">Скачать файл оперативной памяти с
         кодом</label>
     <hr>
@@ -73,8 +74,9 @@
                 }
             }
             var ramcode_txt = document.getElementById("ramcode").value
-            if (!ramcode_txt) alert("Напишите текст программы")
-            else compile_ramcode_for_micro(ramcode_txt, filename, commands)
+            if (document.getElementById("download_ramcode").checked)
+                if (!ramcode_txt) alert("Напишите текст программы")
+                else compile_ramcode_for_micro(ramcode_txt, filename, commands)
             var parameters = Object.entries(commands)
             var arrbuf = new ArrayBuffer(1)
             var uint8 = new Uint8Array(arrbuf)
@@ -158,8 +160,9 @@
             if (document.getElementById("download_mkcmds").checked)
                 download_file_with_content(filename + ".MEM", compiled_txt)
             var cmds_txt = document.getElementById("cmds").value
-            if (!cmds_txt) alert("Напишите кодирование команды")
-            else compile_cmds_for_micro(cmds_txt, filename, labels)
+            if (document.getElementById("download_ramcode").checked || document.getElementById("download_cmds").checked)
+                if (!cmds_txt) alert("Напишите кодирование команды")
+                else compile_cmds_for_micro(cmds_txt, filename, labels)
         }
 
         function onclk1() {
