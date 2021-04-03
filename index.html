@@ -101,7 +101,7 @@
                 for (var j = 0; j < parameters.length; j++) {
                     var [key, value] = parameters[j].split('=')
                     if (key == 'cmd') {
-                        current_code = commands[value].c_op.replace("x", "0")
+                        current_code = commands[value].c_op.replace(/x/g, "0")
                     } else if (key == 'reg1') {
                         current_code = current_code.slice(0, 5) + value.padStart(3, '0') + current_code.slice(8)
                     } else if (key == 'reg2') {
