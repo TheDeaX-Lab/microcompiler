@@ -113,6 +113,8 @@
                         current_code = current_code.slice(0, 8) + value.padStart(8, '0')
                     } else if (key == 'data') {
                         data = value.padStart(4, '0')
+                    } else if (key == 'mod') {
+                        current_code = current_code.slice(0,8) + value.padStart(2, '0') + current_code.slice(10)
                     }
                 }
                 ramcodes.push(parseInt(current_code.slice(8), 2).toString(16).padStart(2, '0') + parseInt(current_code.slice(0, 8), 2).toString(16).padStart(2, '0'))
