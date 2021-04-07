@@ -98,6 +98,7 @@
             for (var i = 0; i < lines.length; i++) {
                 var current_code = '0000000000000000'
                 var parameters = lines[i].split(' ')
+                var data = undefined
                 for (var j = 0; j < parameters.length; j++) {
                     var [key, value] = parameters[j].split('=')
                     if (key == 'cmd') {
@@ -110,9 +111,13 @@
                         current_code = current_code.slice(0, 13) + value.padStart(3, '0')
                     } else if (key == 'lb') {
                         current_code = current_code.slice(0, 8) + value.padStart(8, '0')
+                    } else if (key == 'data') {
+                        data = value.padStart(4, '0')
                     }
                 }
                 ramcodes.push(parseInt(current_code.slice(8), 2).toString(16).padStart(2, '0') + parseInt(current_code.slice(0, 8), 2).toString(16).padStart(2, '0'))
+                if (!!data)
+                    ramcodes.push(data.slice(2) + data.slice(0, 2))
             }
             ramcode_str = ramcodes.join("")
             var b = ""
